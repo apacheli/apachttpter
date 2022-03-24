@@ -10,7 +10,7 @@ Simple HTTP server built for Deno using
 Simple example:
 
 ```ts
-import { Application } from "https://github.com/apacheli/apachttpter/raw/dev/application.ts";
+import { Application } from "https://github.com/apacheli/apachttpter/raw/master/application.ts";
 
 const application = new Application();
 
@@ -31,37 +31,54 @@ application.get("/threads/:thread_id", (request, response, match) => {
 });
 ```
 
-Built-in extensions:
-
-```ts
-import {
-  methodNowAllowed,
-  notFound,
-} from "https://github.com/apacheli/apachttpter/raw/dev/extensions.ts";
-
-application.route("*", notFound);
-
-application.route("/books", methodNotAllowed(["GET", "POST"]));
-
-application.get("/books", (request, response) => {
-  response.body = "You got a book!";
-});
-
-application.post("/books", () => {
-  response.body = "Your book has been submitted!";
-});
-```
-
 Using the `next` function:
 
 ```ts
 application.route("*", (request, response, match, next) => {
+  const date = new Date();
   response.headers.set("Content-Type", "application/json");
-  response.headers.set("Date", new Date().toISOString());
+  response.headers.set("Date", date.toUTCString());
   next();
 });
 
 application.put("/random", (request, response) => {
   response.body = JSON.stringify({ hello: "world" });
 });
+```
+
+Built-in extensions:
+
+```ts
+import {
+  authenticationCheck,
+  methodNotAllowed,
+  notFound,
+  payloadTooLarge,
+  unsupportedMediaType,
+} from "https://github.com/apacheli/apachttpter/raw/master/extensions.ts";
+
+application.route("*", notFound);
+
+application.route(
+  "/books",
+  authenticationCheck((authorization) => authorization === "secret"),
+  methodNotAllowed(["GET", "POST"]),
+);
+
+application.get("/books", (request, response) => {
+  response.body = "You got a book!";
+  response.status = 200;
+  response.statusText = "OK";
+});
+
+application.post(
+  "/books",
+  unsupportedMediaType(["application/json"]),
+  payloadTooLarge(100),
+  (request, response) => {
+    response.body = "Your book has been submitted!";
+    response.status = 201;
+    response.statusText = "Created";
+  },
+);
 ```
