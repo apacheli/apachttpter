@@ -14,7 +14,7 @@ import { Application } from "https://github.com/apacheli/apachttpter/raw/master/
 
 const application = new Application();
 
-application.get("/", (request, response) => {
+application.get("/", (_request, response) => {
   response.body = "Hello, World!";
 });
 
@@ -24,7 +24,7 @@ application.listen(1337);
 Pattern matching:
 
 ```ts
-application.get("/threads/:thread_id", (request, response, match) => {
+application.get("/threads/:thread_id", (_request, response, match) => {
   const threadId = match.pathname.groups.thread_id;
   const thread = threads.get(threadId);
   response.body = JSON.stringify(thread);
@@ -34,14 +34,14 @@ application.get("/threads/:thread_id", (request, response, match) => {
 Using the `next` function:
 
 ```ts
-application.route("*", (request, response, match, next) => {
+application.route("*", (_request, response, _match, next) => {
   const date = new Date();
   response.headers.set("Content-Type", "application/json");
   response.headers.set("Date", date.toUTCString());
   next();
 });
 
-application.put("/random", (request, response) => {
+application.put("/random", (_request, response) => {
   response.body = JSON.stringify({ hello: "world" });
 });
 ```
@@ -65,7 +65,7 @@ application.route(
   methodNotAllowed(["GET", "POST"]),
 );
 
-application.get("/books", (request, response) => {
+application.get("/books", (_request, response) => {
   response.body = "You got a book!";
   response.status = 200;
   response.statusText = "OK";
@@ -75,7 +75,7 @@ application.post(
   "/books",
   unsupportedMediaType(["application/json"]),
   payloadTooLarge(100),
-  (request, response) => {
+  (_request, response) => {
     response.body = "Your book has been submitted!";
     response.status = 201;
     response.statusText = "Created";

@@ -19,7 +19,7 @@ const setResponse = (
 export const authenticationCheck = (
   verify: (authorization: string) => boolean | Promise<boolean>,
 ): Callback =>
-  async (request, response, match, next) => {
+  async (request, response, _match, next) => {
     const authorization = request.headers.get("Authorization");
     if (!authorization) {
       setResponse(response, 401, "Unauthorized");
@@ -37,7 +37,7 @@ export const authenticationCheck = (
  * application.route("*", notFound);
  * ```
  */
-export const notFound: Callback = (request, response, match, next) => {
+export const notFound: Callback = (_request, response, _match, next) => {
   setResponse(response, 404, "Not Found");
   next();
 };
@@ -54,7 +54,7 @@ export const notFound: Callback = (request, response, match, next) => {
  * @param methods The methods to allow.
  */
 export const methodNotAllowed = (methods: string[]): Callback =>
-  (request, response, match, next) => {
+  (_request, response, _match, next) => {
     setResponse(response, 405, "Method Not Allowed");
     response.headers.set("Allow", methods.join(", "));
     next();
@@ -67,7 +67,7 @@ export const methodNotAllowed = (methods: string[]): Callback =>
  * @param retryAfter Time to retry after.
  */
 export const payloadTooLarge = (limit: number, retryAfter?: number): Callback =>
-  (request, response, match, next) => {
+  (request, response, _match, next) => {
     const contentLength = request.headers.get("Content-Length");
     if (!contentLength) {
       setResponse(response, 411, "Length Required");
@@ -87,7 +87,7 @@ export const payloadTooLarge = (limit: number, retryAfter?: number): Callback =>
  * @param types The types to support.
  */
 export const unsupportedMediaType = (types: string[]): Callback =>
-  (request, response, match, next) => {
+  (request, response, _match, next) => {
     const contentType = request.headers.get("Content-Type");
     if (!contentType || !types.some((type) => type.startsWith(contentType))) {
       setResponse(response, 415, "Unsupported Media Type");
