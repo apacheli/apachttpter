@@ -1,8 +1,6 @@
-export interface ApplicationResponse {
+export interface ApplicationResponse extends ResponseInit {
   body?: BodyInit;
   headers: Headers;
-  status?: number;
-  statusText?: string;
 }
 
 export type Callback = (

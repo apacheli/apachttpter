@@ -82,7 +82,8 @@ export const payloadTooLarge = (limit: number, retryAfter?: number): Callback =>
   };
 
 /**
- * Disallow certain `Content-Type`s.
+ * Disallow certain `Content-Type`s. You do not have to account for parameters
+ * after `;`.
  *
  * @param types The types to support.
  */

@@ -2,8 +2,13 @@
 
 ### About
 
-Simple HTTP server built for Deno using
+A Simple HTTP server built for Deno using
 [`URLPattern`](https://developer.mozilla.org/en-US/docs/Web/API/URLPattern).
+
+### Needs Work
+
+- [] Support modifying the body
+- [] Support redirecting
 
 ### Example
 
