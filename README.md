@@ -7,8 +7,10 @@ A Simple HTTP server built for Deno using
 
 ### Needs Work
 
-- [] Support modifying the body
-- [] Support redirecting
+- [ ] Support modifying the body
+- [ ] Support redirecting
+- [ ] Support error handling when something goes wrong
+- [ ] Add extension support for more `Content-Type`s
 
 ### Example
 
