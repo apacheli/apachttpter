@@ -7,10 +7,14 @@ A Simple HTTP server built for Deno using
 
 ### Needs Work
 
-- [ ] Support modifying the body
+- [ ] Support modifying the request body when chaining the context
 - [ ] Support redirecting
 - [ ] Support error handling when something goes wrong
-- [ ] Add extension support for more `Content-Type`s
+- [ ] Built-in extension support for more `Content-Type`s
+  - [ ] `application/json`
+  - [ ] `application/x-www-form-urlencoded`
+  - [ ] `multipart/form-data`
+  - [ ] `text/plain`
 
 ### Example
 
@@ -31,20 +35,23 @@ application.listen(1337);
 Pattern matching:
 
 ```ts
-application.get("/threads/:thread_id", (_request, response, match) => {
+application.get("/threads/:thread_id", (_request, response, _next, match) => {
   const threadId = match.pathname.groups.thread_id;
   const thread = threads.get(threadId);
-  response.body = JSON.stringify(thread);
+  if (thread) {
+    response.body = `${thread.name}: ${thread.description}`;
+  } else {
+    response.body = "I could not find that thread.";
+    response.status = 404;
+  }
 });
 ```
 
 Using the `next` function:
 
 ```ts
-application.route("*", (_request, response, _match, next) => {
-  const date = new Date();
+application.route("*", (_request, response, next) => {
   response.headers.set("Content-Type", "application/json");
-  response.headers.set("Date", date.toUTCString());
   next();
 });
 
@@ -68,14 +75,13 @@ application.route("*", notFound);
 
 application.route(
   "/books",
-  authenticationCheck((authorization) => authorization === "secret"),
   methodNotAllowed(["GET", "POST"]),
+  authenticationCheck((authorization) => authorization === "secret"),
 );
 
 application.get("/books", (_request, response) => {
   response.body = "You got a book!";
   response.status = 200;
-  response.statusText = "OK";
 });
 
 application.post(
@@ -85,7 +91,6 @@ application.post(
   (_request, response) => {
     response.body = "Your book has been submitted!";
     response.status = 201;
-    response.statusText = "Created";
   },
 );
 ```

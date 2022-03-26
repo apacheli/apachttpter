@@ -6,8 +6,8 @@ export interface ApplicationResponse extends ResponseInit {
 export type Callback = (
   request: Request,
   response: ApplicationResponse,
-  match: URLPatternResult,
   next: () => void,
+  match: URLPatternResult,
 ) => void | Promise<void>;
 
 /** A route. */
@@ -20,10 +20,15 @@ export interface Route {
 
 /** Simple HTTP web server application. */
 export class Application {
+  /** Middleware callbacks. */
+  preCallbacks?: Callback[];
   /** Server listener. */
   listener?: Deno.Listener;
   /** Routes being processed by the application. */
   routes = new Map<string, Route>();
+
+  middleware() {
+  }
 
   /**
    * Add a route handler.
@@ -49,9 +54,9 @@ export class Application {
    */
   method(method: string, pathname: string, ...callbacks: Callback[]) {
     callbacks = callbacks.map((callback) =>
-      (request, context, match, next) => {
+      (request, response, next, match) => {
         if (request.method === method) {
-          callback(request, context, match, next);
+          callback(request, response, next, match);
         } else {
           next();
         }
@@ -169,7 +174,7 @@ export class Application {
       }
       for (const callback of route.callbacks) {
         end = true;
-        await callback(request, response, match, next);
+        await callback(request, response, next, match);
         if (end) {
           break routes;
         }

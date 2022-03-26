@@ -1,14 +1,4 @@
-import type { ApplicationResponse, Callback } from "./application.ts";
-
-const setResponse = (
-  response: ApplicationResponse,
-  status: number,
-  statusText: string,
-) => {
-  response.body = `${status} ${statusText}`;
-  response.status = status;
-  response.statusText = statusText;
-};
+import type { Callback } from "./application.ts";
 
 /**
  * Check the `Authorization` header. If the header is missing, respond with
@@ -19,12 +9,14 @@ const setResponse = (
 export const authenticationCheck = (
   verify: (authorization: string) => boolean | Promise<boolean>,
 ): Callback =>
-  async (request, response, _match, next) => {
+  async (request, response, next) => {
     const authorization = request.headers.get("Authorization");
     if (!authorization) {
-      setResponse(response, 401, "Unauthorized");
+      response.body = "401 Unauthorized";
+      response.status = 401;
     } else if (!await verify(authorization)) {
-      setResponse(response, 403, "Forbidden");
+      response.body = "403 Forbidden";
+      response.status = 403;
     } else {
       next();
     }
@@ -37,8 +29,9 @@ export const authenticationCheck = (
  * application.route("*", notFound);
  * ```
  */
-export const notFound: Callback = (_request, response, _match, next) => {
-  setResponse(response, 404, "Not Found");
+export const notFound: Callback = (_request, response, next) => {
+  response.body = "404 Not Found";
+  response.status = 404;
   next();
 };
 
@@ -54,8 +47,9 @@ export const notFound: Callback = (_request, response, _match, next) => {
  * @param methods The methods to allow.
  */
 export const methodNotAllowed = (methods: string[]): Callback =>
-  (_request, response, _match, next) => {
-    setResponse(response, 405, "Method Not Allowed");
+  (_request, response, next) => {
+    response.body = "405 Method Not Allowed";
+    response.status = 405;
     response.headers.set("Allow", methods.join(", "));
     next();
   };
@@ -67,13 +61,15 @@ export const methodNotAllowed = (methods: string[]): Callback =>
  * @param retryAfter Time to retry after.
  */
 export const payloadTooLarge = (limit: number, retryAfter?: number): Callback =>
-  (request, response, _match, next) => {
+  (request, response, next) => {
     const contentLength = request.headers.get("Content-Length");
     if (!contentLength) {
-      setResponse(response, 411, "Length Required");
+      response.body = "411 Length Required";
+      response.status = 411;
     } else if (parseInt(contentLength) > limit) {
-      setResponse(response, 413, "Payload Too Large");
-      if (retryAfter) {
+      response.body = "413 Payload Too Large";
+      response.status = 413;
+      if (retryAfter !== undefined) {
         request.headers.set("Retry-After", `${retryAfter}`);
       }
     } else {
@@ -88,10 +84,11 @@ export const payloadTooLarge = (limit: number, retryAfter?: number): Callback =>
  * @param types The types to support.
  */
 export const unsupportedMediaType = (types: string[]): Callback =>
-  (request, response, _match, next) => {
+  (request, response, next) => {
     const contentType = request.headers.get("Content-Type");
-    if (!contentType || !types.some((type) => type.startsWith(contentType))) {
-      setResponse(response, 415, "Unsupported Media Type");
+    if (!contentType || !types.some((type) => type === contentType)) {
+      response.body = "415 Unsupported Media Type";
+      response.status = 415;
     } else {
       next();
     }
