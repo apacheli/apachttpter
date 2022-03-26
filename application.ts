@@ -20,15 +20,10 @@ export interface Route {
 
 /** Simple HTTP web server application. */
 export class Application {
-  /** Middleware callbacks. */
-  preCallbacks?: Callback[];
   /** Server listener. */
   listener?: Deno.Listener;
   /** Routes being processed by the application. */
   routes = new Map<string, Route>();
-
-  middleware() {
-  }
 
   /**
    * Add a route handler.
@@ -43,6 +38,15 @@ export class Application {
         pattern: new URLPattern({ pathname }),
       });
     }
+  }
+
+  /**
+   * Glob pattern.
+   *
+   * @param callbacks The functions to rub.
+   */
+  glob(...callbacks: Callback[]) {
+    this.route("*", ...callbacks);
   }
 
   /**
