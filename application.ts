@@ -1,36 +1,10 @@
-export interface ApplicationResponse extends ResponseInit {
-  body?: BodyInit;
-  headers: Headers;
-}
-
-export type Callback = (
-  request: Request,
-  response: ApplicationResponse,
-  next: () => void,
-  match: URLPatternResult,
-) => void | Promise<void>;
-
-/** A route. */
-export interface Route {
-  /** Functions to run for the route. */
-  callbacks: Callback[];
-  /** Route pattern. */
-  pattern: URLPattern;
-}
+import { type Callback, Context, type Route } from "./context.ts";
 
 /** Simple HTTP web server application. */
 export class Application {
-  /** Server listener. */
-  listener?: Deno.Listener;
   /** Routes being processed by the application. */
   routes = new Map<string, Route>();
 
-  /**
-   * Add a route handler.
-   *
-   * @param pathname The pathname of the route. E.g., `/threads/:thread_id`.
-   * @param callback The functions to run.
-   */
   route(pathname: string, ...callbacks: Callback[]) {
     if (this.routes.get(pathname)?.callbacks.push(...callbacks) === undefined) {
       this.routes.set(pathname, {
@@ -40,32 +14,16 @@ export class Application {
     }
   }
 
-  /**
-   * Glob pattern.
-   *
-   * @param callbacks The functions to rub.
-   */
-  glob(...callbacks: Callback[]) {
-    this.route("*", ...callbacks);
-  }
-
-  /**
-   * Add a method layer over the `route` method.
-   *
-   * @param method The supported method.
-   * @param pathname The pathname of the route.
-   * @param callbacks The functions to run.
-   */
-  method(method: string, pathname: string, ...callbacks: Callback[]) {
-    callbacks = callbacks.map((callback) =>
-      (request, response, next, match) => {
-        if (request.method === method) {
-          callback(request, response, next, match);
+  #method(method: string, pathname: string, ...callbacks: Callback[]) {
+    callbacks = callbacks.map((callback) => {
+      return (context) => {
+        if (context.rawRequest.method === method) {
+          return callback(context);
         } else {
-          next();
+          return context.next();
         }
-      }
-    );
+      };
+    });
     this.route(pathname, ...callbacks);
   }
 
@@ -77,17 +35,7 @@ export class Application {
    * @param callbacks The functions to run.
    */
   get(pathname: string, ...callbacks: Callback[]) {
-    this.method("GET", pathname, ...callbacks);
-  }
-
-  /**
-   * Handle `HEAD` methods for the route.
-   *
-   * @param pathname The pathname of the route.
-   * @param callbacks The functions to run.
-   */
-  head(pathname: string, ...callbacks: Callback[]) {
-    this.method("HEAD", pathname, ...callbacks);
+    this.#method("GET", pathname, ...callbacks);
   }
 
   /**
@@ -97,7 +45,7 @@ export class Application {
    * @param callbacks The functions to run.
    */
   post(pathname: string, ...callbacks: Callback[]) {
-    this.method("POST", pathname, ...callbacks);
+    this.#method("POST", pathname, ...callbacks);
   }
 
   /**
@@ -107,7 +55,7 @@ export class Application {
    * @param callbacks The functions to run.
    */
   put(pathname: string, ...callbacks: Callback[]) {
-    this.method("PUT", pathname, ...callbacks);
+    this.#method("PUT", pathname, ...callbacks);
   }
 
   /**
@@ -117,37 +65,7 @@ export class Application {
    * @param callbacks The functions to run.
    */
   delete(pathname: string, ...callbacks: Callback[]) {
-    this.method("DELETE", pathname, ...callbacks);
-  }
-
-  /**
-   * Handle `CONNECT` methods for the route.
-   *
-   * @param pathname The pathname of the route.
-   * @param callbacks The functions to run.
-   */
-  connect(pathname: string, ...callbacks: Callback[]) {
-    this.method("CONNECT", pathname, ...callbacks);
-  }
-
-  /**
-   * Handle `OPTIONS` methods for the route.
-   *
-   * @param pathname The pathname of the route.
-   * @param callbacks The functions to run.
-   */
-  options(pathname: string, ...callbacks: Callback[]) {
-    this.method("OPTIONS", pathname, ...callbacks);
-  }
-
-  /**
-   * Handle `TRACE` methods for the route.
-   *
-   * @param pathname The pathname of the route.
-   * @param callbacks The functions to run.
-   */
-  trace(pathname: string, ...callbacks: Callback[]) {
-    this.method("TRACE", pathname, ...callbacks);
+    this.#method("DELETE", pathname, ...callbacks);
   }
 
   /**
@@ -157,34 +75,34 @@ export class Application {
    * @param callbacks The functions to run.
    */
   patch(pathname: string, ...callbacks: Callback[]) {
-    this.method("PATCH", pathname, ...callbacks);
+    this.#method("PATCH", pathname, ...callbacks);
   }
-  //#endregion methods
 
-  /** Handle a `Deno.RequestEvent`. */
-  async handle({ request, respondWith }: Deno.RequestEvent) {
-    const response: ApplicationResponse = {
-      headers: new Headers(),
-    };
-    let end;
-    const next = () => {
-      end = false;
-    };
-    routes:
+  /** Handle a `Request`. */
+  async handle(request: Request) {
     for (const route of this.routes.values()) {
-      const match = route.pattern.exec(request.url);
-      if (match === null) {
-        continue;
-      }
-      for (const callback of route.callbacks) {
-        end = true;
-        await callback(request, response, next, match);
-        if (end) {
-          break routes;
-        }
+      const result = route.pattern.exec(request.url);
+      if (result) {
+        const context = new Context(request, result, route);
+        await context.next();
+        return context;
       }
     }
-    await respondWith(new Response(response.body, response));
+  }
+
+  /** Handle a `Deno.RequestEvent`. */
+  async handleEvent(event: Deno.RequestEvent) {
+    const context = await this.handle(event.request);
+    let response;
+    if (context) {
+      response = new Response(context.response.body as BodyInit, {
+        headers: context.response.headers,
+        status: context.response.status,
+      });
+    } else {
+      response = new Response();
+    }
+    await event.respondWith(response);
   }
 
   /**
@@ -193,9 +111,8 @@ export class Application {
    * @param conn A connection received from `Deno.Listener`.
    */
   async serve(conn: Deno.Conn) {
-    const httpConn = Deno.serveHttp(conn);
-    for await (const event of httpConn) {
-      this.handle(event);
+    for await (const event of Deno.serveHttp(conn)) {
+      this.handleEvent(event);
     }
   }
 
@@ -206,15 +123,8 @@ export class Application {
    */
   async listen(port: number | Deno.Listener) {
     const listener = typeof port === "number" ? Deno.listen({ port }) : port;
-    this.listener = listener;
     for await (const conn of listener) {
       this.serve(conn);
     }
-  }
-
-  /** Close the server. */
-  close() {
-    this.listener?.close();
-    this.listener = undefined;
   }
 }

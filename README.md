@@ -7,7 +7,7 @@ A Simple HTTP server built for Deno using
 
 ### Needs Work
 
-- [ ] Support modifying the request body when chaining the context
+- [x] Support modifying the request body when chaining the context
 - [ ] Support redirecting
 - [ ] Support error handling when something goes wrong
 - [ ] Built-in extension support for more `Content-Type`s
@@ -25,7 +25,7 @@ import { Application } from "https://github.com/apacheli/apachttpter/raw/master/
 
 const application = new Application();
 
-application.get("/", (_request, response) => {
+application.get("/", ({ response }) => {
   response.body = "Hello, World!";
 });
 
@@ -35,8 +35,8 @@ application.listen(1337);
 Pattern matching:
 
 ```ts
-application.get("/threads/:thread_id", (_request, response, _next, match) => {
-  const threadId = match.pathname.groups.thread_id;
+application.get("/threads/:thread_id", ({ response, result }) => {
+  const threadId = parseInt(result.pathname.groups.thread_id);
   const thread = threads.get(threadId);
   if (thread) {
     response.body = `${thread.name}: ${thread.description}`;
@@ -50,19 +50,23 @@ application.get("/threads/:thread_id", (_request, response, _next, match) => {
 Using the `next` function:
 
 ```ts
-application.route("*", (_request, response, next) => {
-  response.headers.set("Content-Type", "application/json");
-  next();
+application.get("/forums", async ({ next, response }) => {
+  const start = Date.now();
+  await next();
+  response.body = JSON.stringify(response.body);
+  const end = Date.now() - start;
+  console.log(end);
 });
 
-application.put("/random", (_request, response) => {
-  response.body = JSON.stringify({ hello: "world" });
+application.get("/forums", ({ response }) => {
+  response.body = [{ id: 123 }];
 });
 ```
 
 Built-in extensions:
 
 ```ts
+import { Application } from "https://github.com/apacheli/apachttpter/raw/master/application.ts";
 import {
   authenticationCheck,
   methodNotAllowed,
@@ -71,7 +75,7 @@ import {
   unsupportedMediaType,
 } from "https://github.com/apacheli/apachttpter/raw/master/extensions.ts";
 
-application.route("*", notFound);
+const application = new Application();
 
 application.route(
   "/books",
@@ -79,7 +83,7 @@ application.route(
   authenticationCheck((authorization) => authorization === "secret"),
 );
 
-application.get("/books", (_request, response) => {
+application.get("/books", ({ response }) => {
   response.body = "You got a book!";
   response.status = 200;
 });
@@ -88,9 +92,13 @@ application.post(
   "/books",
   unsupportedMediaType(["application/json"]),
   payloadTooLarge(100),
-  (_request, response) => {
+  ({ response }) => {
     response.body = "Your book has been submitted!";
     response.status = 201;
   },
 );
+
+application.route("*", notFound);
+
+application.listen(8080);
 ```
