@@ -10,11 +10,10 @@ A Simple HTTP server built for Deno using
 - [x] Support modifying the request body when chaining the context
 - [ ] Support redirecting
 - [ ] Support error handling when something goes wrong
-- [ ] Built-in extension support for more `Content-Type`s
-  - [ ] `application/json`
-  - [ ] `application/x-www-form-urlencoded`
-  - [ ] `multipart/form-data`
-  - [ ] `text/plain`
+- [x] Built-in extension support for more `Content-Type`s
+  - [x] `application/json`
+  - [x] `application/x-www-form-urlencoded`
+  - [x] `multipart/form-data`
 
 ### Example
 

@@ -29,10 +29,10 @@ export const authenticationCheck = (
  * application.route("*", notFound);
  * ```
  */
-export const notFound: Callback = async ({ response, next }) => {
+export const notFound: Callback = ({ response, next }) => {
   response.body = "404 Not Found";
   response.status = 404;
-  await next();
+  return next();
 };
 
 /**
@@ -47,11 +47,11 @@ export const notFound: Callback = async ({ response, next }) => {
  * @param methods The methods to allow.
  */
 export const methodNotAllowed = (methods: string[]): Callback =>
-  async ({ response, next }) => {
+  ({ response, next }) => {
     response.body = "405 Method Not Allowed";
     response.status = 405;
     response.headers.set("Allow", methods.join(", "));
-    await next();
+    return next();
   };
 
 /**
@@ -61,7 +61,7 @@ export const methodNotAllowed = (methods: string[]): Callback =>
  * @param retryAfter Time to retry after.
  */
 export const payloadTooLarge = (limit: number, retryAfter?: number): Callback =>
-  async ({ rawRequest, response, next }) => {
+  ({ rawRequest, response, next }) => {
     const contentLength = rawRequest.headers.get("Content-Length");
     if (!contentLength) {
       response.body = "411 Length Required";
@@ -70,10 +70,10 @@ export const payloadTooLarge = (limit: number, retryAfter?: number): Callback =>
       response.body = "413 Payload Too Large";
       response.status = 413;
       if (retryAfter !== undefined) {
-        rawRequest.headers.set("Retry-After", `${retryAfter}`);
+        response.headers.set("Retry-After", `${retryAfter}`);
       }
     } else {
-      await next();
+      return next();
     }
   };
 
@@ -84,12 +84,12 @@ export const payloadTooLarge = (limit: number, retryAfter?: number): Callback =>
  * @param types The types to support.
  */
 export const unsupportedMediaType = (types: string[]): Callback =>
-  async ({ rawRequest, response, next }) => {
+  ({ rawRequest, response, next }) => {
     const contentType = rawRequest.headers.get("Content-Type");
     if (!contentType || !types.some((type) => type.startsWith(contentType))) {
       response.body = "415 Unsupported Media Type";
       response.status = 415;
     } else {
-      await next();
+      return next();
     }
   };
