@@ -18,12 +18,13 @@ export const authenticationCheck = (
       response.body = "403 Forbidden";
       response.status = 403;
     } else {
-      await next();
+      return next();
     }
   };
 
 /**
- * 404 Not Found
+ * 404 Not Found. `*` matches everything, so place this middleware callback at
+ * the end of your code.
  *
  * ```ts
  * application.route("*", notFound);

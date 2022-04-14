@@ -13,14 +13,14 @@ export interface Route {
 export class Context {
   /** Empty object for modifying. Use in conjuction with `.rawRequest`. */
   request: Record<string, unknown> = {};
-  /** Response */
+  /** Context response. */
   response: ContextResponse = { headers: new Headers() };
 
   #index = 0;
 
   /**
    * @param rawRequest Raw request from `Deno.RequestEvent`.
-   * @param result `URLPattern` match result.
+   * @param result A `URLPatternResult` object.
    * @param route The route or something.
    */
   constructor(

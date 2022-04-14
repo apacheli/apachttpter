@@ -1,43 +1,53 @@
 import type { Callback } from "./context.ts";
 
 /**
- * JSON middleware.
+ * JSON middleware. Runs `Request.json()` under the hood. The final response
+ * body result runs through `JSON.stringify()`.
  *
  * ```ts
- * application.post("/comments", json);
+ * application.post("/posts/:post_id/comments", json);
  *
- * application.post("/comments", (context) => {
- *   if (context.tags.length > 5) {
- *     response.body = { message: "too many tags" };
+ * application.post("/posts/:post_id/comments", (context) => {
+ *   const content = context.request.body.content;
+ *   if (content.length > 2_000) {
+ *     request.body = { message: "content is too long" };
  *     response.status = 400;
- *   } else {
- *     response.body = { message: "success" };
- *   }}
+ *   }
  * });
  * ```
  */
-export const json: Callback = async (
-  { rawRequest, request, response, next },
-) => {
-  request.body = await rawRequest.json();
-  response.headers.set("Content-Type", "application/json; charset=utf-8");
-  await next();
-  response.body = JSON.stringify(response.body);
+export const json: Callback = async (context) => {
+  context.request.body = await context.rawRequest.json();
+  context.response.headers.set("Content-Type", "application/json");
+  await context.next();
+  context.response.body = JSON.stringify(context.response.body);
 };
 
 /**
- * `application/x-www-form-urlencoded` middleware. `request.body` becomes
- * `URLSearchParams`.
+ * `application/x-www-form-urlencoded` middleware. `context.request.body`
+ * becomes `URLSearchParams`.
+ *
+ * ```ts
+ * application.get("/posts", urlSearchParams);
+ *
+ * application.get("/posts", (context) => {
+ *   const filter = context.request.body.get("filter");
+ * });
+ * ```
  */
-export const urlSearchParams: Callback = async (
-  { rawRequest, request, next },
-) => {
-  request.body = new URLSearchParams(await rawRequest.text());
-  await next();
+export const urlSearchParams: Callback = async (context) => {
+  context.request.body = new URLSearchParams(await context.rawRequest.text());
+  await context.next();
 };
 
-/** `multipart/form-data` middleware. `request.body` becomes `FormData`. */
-export const formData: Callback = async ({ rawRequest, request, next }) => {
-  request.body = await rawRequest.formData();
-  await next();
+/**
+ * `multipart/form-data` middleware. `context.request.body` becomes `FormData`.
+ *
+ * ```ts
+ * application.post("/images", formData);
+ * ```
+ */
+export const formData: Callback = async (context) => {
+  context.request.body = await context.rawRequest.formData();
+  await context.next();
 };

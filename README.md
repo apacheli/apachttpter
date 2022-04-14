@@ -31,11 +31,11 @@ application.get("/", ({ response }) => {
 application.listen(1337);
 ```
 
-Pattern matching:
+Pattern matching using `URLPattern.exec()` under the hood:
 
 ```ts
 application.get("/threads/:thread_id", ({ response, result }) => {
-  const threadId = parseInt(result.pathname.groups.thread_id);
+  const threadId = result.pathname.groups.thread_id;
   const thread = threads.get(threadId);
   if (thread) {
     response.body = `${thread.name}: ${thread.description}`;
@@ -46,10 +46,10 @@ application.get("/threads/:thread_id", ({ response, result }) => {
 });
 ```
 
-Using the `next` function:
+Using `Context.next()`, you can make cool middleware chains like this:
 
 ```ts
-application.get("/forums", async ({ next, response }) => {
+application.get("/trending", async ({ next, response }) => {
   const start = Date.now();
   await next();
   response.body = JSON.stringify(response.body);
@@ -57,7 +57,7 @@ application.get("/forums", async ({ next, response }) => {
   console.log(end);
 });
 
-application.get("/forums", ({ response }) => {
+application.get("/trending", ({ response }) => {
   response.body = [{ id: 123 }];
 });
 ```

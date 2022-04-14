@@ -5,6 +5,12 @@ export class Application {
   /** Routes being processed by the application. */
   routes = new Map<string, Route>();
 
+  /**
+   * Make a simple route e.g. `/videos/:video_id`.
+   *
+   * @param pathname The pathname of the route.
+   * @param callbacks The functions to run.
+   */
   route(pathname: string, ...callbacks: Callback[]) {
     if (this.routes.get(pathname)?.callbacks.push(...callbacks) === undefined) {
       this.routes.set(pathname, {
