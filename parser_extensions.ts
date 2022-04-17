@@ -2,7 +2,7 @@ import type { Callback } from "./context.ts";
 
 /**
  * JSON middleware. Runs `Request.json()` under the hood. The final response
- * body result runs through `JSON.stringify()`.
+ * body runs through `JSON.stringify()`.
  *
  * ```ts
  * application.post("/posts/:post_id/comments", json);
@@ -10,8 +10,8 @@ import type { Callback } from "./context.ts";
  * application.post("/posts/:post_id/comments", (context) => {
  *   const content = context.request.body.content;
  *   if (content.length > 2_000) {
- *     request.body = { message: "content is too long" };
- *     response.status = 400;
+ *     context.response.body = { message: "content is too long" };
+ *     context.response.status = 400;
  *   }
  * });
  * ```

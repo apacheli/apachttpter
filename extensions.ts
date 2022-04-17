@@ -42,7 +42,9 @@ export const notFound: Callback = ({ response, next }) => {
  * ```ts
  * application.route("/books", methodNotAllowed(["GET"]));
  *
- * application.get("/books", () => {});
+ * application.get("/books", (context) => {
+ *   // ...
+ * });
  * ```
  *
  * @param methods The methods to allow.
@@ -56,7 +58,8 @@ export const methodNotAllowed = (methods: string[]): Callback =>
   };
 
 /**
- * Disallow payloads if their `Content-Length` exceeds the `limit`.
+ * Disallow payloads if their `Content-Length` exceeds the `limit`. Optional
+ * `Retry-After` header according to specification.
  *
  * @param limit The maximum limit.
  * @param retryAfter Time to retry after.
@@ -80,7 +83,7 @@ export const payloadTooLarge = (limit: number, retryAfter?: number): Callback =>
 
 /**
  * Disallow certain `Content-Type`s. You do not have to account for parameters
- * after `;`.
+ * after `;`. Uses `String.startsWith()` under the hood.
  *
  * @param types The types to support.
  */
